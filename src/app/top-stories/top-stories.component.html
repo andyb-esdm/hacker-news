@@ -1,0 +1,14 @@
+<h1>Top Stories from Hacker News</h1>
+<ng-container *ngIf="stories$ | async as stories; else noStories">
+    <ul>
+        <li *ngFor="let story of stories">
+            <app-story [story]="story"></app-story>
+        </li>
+    </ul>
+    <button (click)="onPrevious()">Previous</button>
+    <button (click)="onNext()">Next</button>
+</ng-container>
+
+<ng-template #noStories>
+    loading ...
+</ng-template>
