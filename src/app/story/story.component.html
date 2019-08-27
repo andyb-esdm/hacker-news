@@ -1,5 +1,10 @@
-{{story.title}}
-<br>
-<div>the text</div>
-{{story.text}}
-<div>the end of the text</div>
+<div class="card">
+    {{story.title}}
+    <br>
+    by {{story.by}}
+    <br>
+    <a href="{{story.url}}" target="_blank">link</a>
+    <br>
+    <a [routerLink]="['/story', story.id]">{{story.kids? story.kids.length : 0 }} comments</a>
+</div>
+

@@ -7,14 +7,19 @@ import { HttpClient } from '@angular/common/http';
   providedIn: 'root'
 })
 export class HackerNewsService {
-  private topStories: BehaviorSubject<IStory[]> = new BehaviorSubject<IStory[]>(null);
   private baseUrl = 'https://hacker-news.firebaseio.com/v0';
   private storyIds: number[] = [];
   private start = 0;
   private pageSize = 20;
 
+  private topStories: BehaviorSubject<IStory[]> = new BehaviorSubject<IStory[]>(null);
   get topStories$() {
     return this.topStories.asObservable();
+  }
+
+  private comments: BehaviorSubject<IStory[]> = new BehaviorSubject<IStory[]>(null);
+  get comment$() {
+    return this.comments.asObservable();
   }
 
   constructor(private http: HttpClient) {
@@ -53,5 +58,22 @@ export class HackerNewsService {
       this.topStories.next(stories);
     });
   }
+
+  getComments(id: number) {
+    this.comments.next(null);
+    const commentRequests: Observable<IStory>[] = new Array<Observable<IStory>>();
+    this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).subscribe(
+      response => {
+        const kids = response.kids;
+        kids.forEach(kid => {
+          commentRequests.push(this.http.get<IStory>(`${this.baseUrl}/item/${kid}.json`));
+        });
+        forkJoin(commentRequests).subscribe(comments => {
+          this.comments.next(comments);
+        });
+      }
+    );
+  }
+
 }
 

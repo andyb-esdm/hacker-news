@@ -1,0 +1,15 @@
+<h1>Comments for </h1>
+<ng-container *ngIf="comments$ | async as comments; else noComments">
+    <ul>
+        <li *ngFor="let comment of comments">
+            by {{comment.by}}
+            <br>
+            <div class="card" [innerHTML]="comment.text"></div>
+        </li>
+    </ul>
+
+</ng-container>
+
+<ng-template #noComments>
+    loading ...
+</ng-template>
