@@ -74,7 +74,6 @@ export class HackerNewsService {
     const stories = this.stories.getValue();
     const story = stories.get(id);
     if (story === undefined) {
-      console.log('undefined');
       return this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).pipe(
         tap(s => {
           stories.set(s.id, s);
