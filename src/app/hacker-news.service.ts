@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { IStory } from './models/story';
 import { Observable, BehaviorSubject, forkJoin, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -8,9 +9,11 @@ import { HttpClient } from '@angular/common/http';
 })
 export class HackerNewsService {
   private baseUrl = 'https://hacker-news.firebaseio.com/v0';
-  private storyIds: number[] = [];
+  private topStoryIds: number[] = [];
   private start = 0;
   private pageSize = 20;
+
+  private stories: BehaviorSubject<Map<number, IStory>> = new BehaviorSubject<Map<number, IStory>>(new Map<number, IStory>());
 
   private topStories: BehaviorSubject<IStory[]> = new BehaviorSubject<IStory[]>(null);
   get topStories$() {
@@ -23,20 +26,24 @@ export class HackerNewsService {
   }
 
   constructor(private http: HttpClient) {
+    this.getTopStoryIds();
+  }
+
+  private getTopStoryIds() {
     this.http.get<number[]>(`${this.baseUrl}/topstories.json`).subscribe(
       (response) => {
-        this.storyIds = response;
-        this.getStories(0, this.pageSize);
+        this.topStoryIds = response;
+        this.getTopStories(0, this.pageSize);
       });
   }
 
   getNext() {
     this.start += this.pageSize;
-    if (this.start + this.pageSize > this.storyIds.length) {
-      this.start = this.storyIds.length - this.pageSize;
+    if (this.start + this.pageSize > this.topStoryIds.length) {
+      this.start = this.topStoryIds.length - this.pageSize;
     }
     this.topStories.next(null);
-    this.getStories(this.start, this.start + this.pageSize);
+    this.getTopStories(this.start, this.start + this.pageSize);
   }
 
   getPrevious() {
@@ -45,14 +52,14 @@ export class HackerNewsService {
       this.start = 0;
     }
     this.topStories.next(null);
-    this.getStories(this.start, this.start + this.pageSize);
+    this.getTopStories(this.start, this.start + this.pageSize);
   }
 
-  getStories(start: number, end: number) {
-    const requestedStoryIds = this.storyIds.slice(start, end);
+  getTopStories(start: number, end: number) {
+    const requestedStoryIds = this.topStoryIds.slice(start, end);
     const storyRequests: Observable<IStory>[] = new Array<Observable<IStory>>();
     requestedStoryIds.forEach(id => {
-      storyRequests.push(this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`));
+      storyRequests.push(this.getStory(id));
     });
     forkJoin(storyRequests).subscribe(stories => {
       this.topStories.next(stories);
@@ -60,28 +67,45 @@ export class HackerNewsService {
   }
 
   getStory(id: number) {
-    const topStories = this.topStories.getValue();
-    if (topStories !== null) {
-      const story = this.topStories.getValue().find(topStory => topStory.id === id);
-      if (story !== undefined) {
-        return of(story);
-      }
+    return this.getItem(id);
+  }
+
+  getItem(id: number) {
+    const stories = this.stories.getValue();
+    const story = stories.get(id);
+    if (story === undefined) {
+      console.log('undefined');
+      return this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).pipe(
+        tap(s => {
+          stories.set(s.id, s);
+          this.stories.next(stories);
+        }
+        ));
+    } else {
+      console.log('defined');
+      return of(story);
     }
-    return this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`);
   }
 
   getComments(id: number) {
+    if (id === null) {
+      return null;
+    }
     this.comments.next(null);
     const commentRequests: Observable<IStory>[] = new Array<Observable<IStory>>();
     this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).subscribe(
       response => {
         const kids = response.kids;
-        kids.forEach(kid => {
-          commentRequests.push(this.http.get<IStory>(`${this.baseUrl}/item/${kid}.json`));
-        });
-        forkJoin(commentRequests).subscribe(comments => {
-          this.comments.next(comments);
-        });
+        if (kids) {
+          kids.forEach(kid => {
+            commentRequests.push(this.getItem(kid));
+          });
+          forkJoin(commentRequests).subscribe(comments => {
+            this.comments.next(comments);
+          });
+        } else {
+          this.comments.next([]);
+        }
       }
     );
   }
