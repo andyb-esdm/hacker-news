@@ -92,7 +92,7 @@ export class HackerNewsService {
     }
     this.comments.next(null);
     const commentRequests: Observable<IStory>[] = new Array<Observable<IStory>>();
-    this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).subscribe(
+    this.getStory(id).subscribe(
       response => {
         const kids = response.kids;
         if (kids) {
