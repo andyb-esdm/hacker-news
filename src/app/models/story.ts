@@ -1,5 +1,5 @@
 export interface IStory {
-    id: string;
+    id: number;
     title: string;
     by: string;
     text: string;

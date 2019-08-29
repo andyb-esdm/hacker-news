@@ -1,4 +1,4 @@
-<h1>Comments for </h1>
+<h1>Comments for <span *ngIf="story$ | async as story">{{ story.title }}</span></h1>
 <ng-container *ngIf="comments$ | async as comments; else noComments">
     <ul>
         <li *ngFor="let comment of comments">
@@ -7,9 +7,8 @@
             <div class="card" [innerHTML]="comment.text"></div>
         </li>
     </ul>
-
 </ng-container>
 
 <ng-template #noComments>
-    loading ...
+    <img class="loading" src="../../assets/loading.gif" alt="loading">
 </ng-template>

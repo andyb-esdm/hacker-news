@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { IStory } from './models/story';
-import { Observable, BehaviorSubject, forkJoin } from 'rxjs';
+import { Observable, BehaviorSubject, forkJoin, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -57,6 +57,17 @@ export class HackerNewsService {
     forkJoin(storyRequests).subscribe(stories => {
       this.topStories.next(stories);
     });
+  }
+
+  getStory(id: number) {
+    const topStories = this.topStories.getValue();
+    if (topStories !== null) {
+      const story = this.topStories.getValue().find(topStory => topStory.id === id);
+      if (story !== undefined) {
+        return of(story);
+      }
+    }
+    return this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`);
   }
 
   getComments(id: number) {
