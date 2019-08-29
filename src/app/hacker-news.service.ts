@@ -13,7 +13,7 @@ export class HackerNewsService {
   private start = 0;
   private pageSize = 20;
 
-  private stories: BehaviorSubject<Map<number, IStory>> = new BehaviorSubject<Map<number, IStory>>(new Map<number, IStory>());
+  private items: BehaviorSubject<Map<number, IStory>> = new BehaviorSubject<Map<number, IStory>>(new Map<number, IStory>());
 
   private topStories: BehaviorSubject<IStory[]> = new BehaviorSubject<IStory[]>(null);
   get topStories$() {
@@ -71,18 +71,17 @@ export class HackerNewsService {
   }
 
   getItem(id: number) {
-    const stories = this.stories.getValue();
-    const story = stories.get(id);
-    if (story === undefined) {
+    const items = this.items.getValue();
+    const item = items.get(id);
+    if (item === undefined) {
       return this.http.get<IStory>(`${this.baseUrl}/item/${id}.json`).pipe(
         tap(s => {
-          stories.set(s.id, s);
-          this.stories.next(stories);
+          items.set(s.id, s);
+          this.items.next(items);
         }
         ));
     } else {
-      console.log('defined');
-      return of(story);
+      return of(item);
     }
   }
 
